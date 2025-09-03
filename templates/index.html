@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generative AI Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #1a202c;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        #chat-container {
+            width: 100%;
+            max-width: 600px;
+            height: 80vh;
+            max-height: 700px;
+            background-color: #2d3748;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #chat-header {
+            background-color: #4a5568;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+        }
+        #chat-messages {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            color: #e2e8f0;
+        }
+        .message {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            max-width: 75%;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #4299e1;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 0;
+        }
+        .bot-message {
+            background-color: #4a5568;
+            color: white;
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
+        }
+        #chat-input-area {
+            display: flex;
+            padding: 1rem;
+            border-top: 1px solid #4a5568;
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 0.75rem; /* 12px */
+            border: 1px solid #4a5568;
+            border-radius: 0.5rem; /* 8px */
+            margin-right: 0.5rem; /* 8px */
+            background-color: #2d3748; /* Match chat container bg */
+            color: #e2e8f0; /* Light gray text */
+            outline: none;
+        }
+        #user-input:focus {
+            border-color: #63b3ed; /* Lighter blue on focus */
+            box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.5);
+        }
+        #send-button {
+            padding: 0.75rem 1.5rem; /* 12px 24px */
+            background-color: #4299e1; /* Blue button */
+            color: white;
+            border: none;
+            border-radius: 0.5rem; /* 8px */
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s ease-in-out;
+        }
+        #send-button:hover {
+            background-color: #3182ce; /* Darker blue on hover */
+        }
+        /* Scrollbar styling for webkit browsers */
+        #chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+        #chat-messages::-webkit-scrollbar-track {
+            background: #2d3748; /* Match chat container bg */
+            border-radius: 10px;
+        }
+        #chat-messages::-webkit-scrollbar-thumb {
+            background: #4a5568; /* Medium gray for scrollbar thumb */
+            border-radius: 10px;
+        }
+        #chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #718096; /* Lighter gray on hover */
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <div id="chat-header">
+            🤖 "Generative AI" Bot 🤖
+        </div>
+        <div id="chat-messages">
+            <div class="message bot-message">Hello! Ask me anything. My wisdom is boundless.</div>
+        </div>
+        <div id="chat-input-area">
+            <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off">
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+
+        function addMessage(message, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            if (sender === 'user') {
+                messageElement.classList.add('user-message');
+                messageElement.textContent = message;
+            } else {
+                messageElement.classList.add('bot-message');
+                // Simulate typing effect for the bot
+                let i = 0;
+                const speed = 50; // milliseconds per character
+                messageElement.textContent = ""; // Clear content before typing
+                function typeWriter() {
+                    if (i < message.length) {
+                        messageElement.textContent += message.charAt(i);
+                        i++;
+                        setTimeout(typeWriter, speed);
+                        chatMessages.scrollTop = chatMessages.scrollHeight; // Keep scrolled to bottom
+                    }
+                }
+                typeWriter();
+            }
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to the bottom
+        }
+
+        async function sendMessage() {
+            const messageText = userInput.value.trim();
+            if (messageText === '') return;
+
+            addMessage(messageText, 'user');
+            userInput.value = ''; // Clear input field
+
+            // Disable input and button while waiting for response
+            userInput.disabled = true;
+            sendButton.disabled = true;
+            sendButton.textContent = 'Thinking...';
+
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: messageText }),
+                });
+                
+                if (!response.ok) {
+                    // Handle HTTP errors
+                    const errorText = await response.text();
+                    console.error('Error from server:', response.status, errorText);
+                    addMessage(`Error: ${response.status}. Check console.`, 'bot');
+                    return;
+                }
+
+                const data = await response.json();
+                // Add a slight delay before bot responds for realism
+                setTimeout(() => {
+                    addMessage(data.response, 'bot');
+                }, 500);
+
+            } catch (error) {
+                console.error('Error sending message:', error);
+                addMessage('Oops! Something went wrong. Check the console.', 'bot');
+            } finally {
+                 // Re-enable input and button
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send';
+                userInput.focus(); // Focus back on the input field
+            }
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Initial focus on the input field
+        userInput.focus();
+    </script>
+</body>
+</html>
